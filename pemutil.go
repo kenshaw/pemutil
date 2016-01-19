@@ -21,6 +21,11 @@ type PEM []interface{}
 // BlockType is a PEM block type.
 type BlockType string
 
+// String satisfies the string interface.
+func (bt BlockType) String() string {
+	return string(bt)
+}
+
 // Store is a store for decoded PEM block types.
 type Store map[BlockType]interface{}
 

@@ -9,6 +9,12 @@ import (
 	"testing"
 )
 
+func TestBlockTypeString(t *testing.T) {
+	if PrivateKey.String() != "PRIVATE KEY" {
+		t.Errorf("PrivateKey should be PRIVATE KEY")
+	}
+}
+
 func TestPEMErrors(t *testing.T) {
 	tests := []interface{}{
 		// non existent file
