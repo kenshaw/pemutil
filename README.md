@@ -1,9 +1,8 @@
 # About pemutil [![Build Status](https://travis-ci.org/knq/pemutil.svg)](https://travis-ci.org/knq/pemutil) [![Coverage Status](https://coveralls.io/repos/knq/pemutil/badge.svg?branch=master&service=github)](https://coveralls.io/github/knq/pemutil?branch=master) #
 
-A [Golang](https://golang.org/project) package that provides a very light
-wrapper around PEM encoded data, meant to streamline the decoding of PEM data
-into a usable store of standard [crypto](https://golang.org/pkg/crypto/)
-primitives.
+A [Golang](https://golang.org/project) package that provides a light wrapper to
+load PEM-encoded data, meant to ease the loading, parsing and decoding of PEM
+data into standard [crypto](https://golang.org/pkg/crypto/) primitives.
 
 ## Installation ##
 
