@@ -1,6 +1,16 @@
 // Package pemutil provides a simple, high-level API to load, parse, and decode
 // standard crypto primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc) from
 // PEM-encoded data.
+//
+// The pemutil package commonly used similar to the following:
+//
+//		store := pemutil.Store{}
+//		pemutil.PEM{"myrsakey.pem"}.Load(store)
+//
+//		if rsaPrivKey, ok := store[pemutil.RSAPrivateKey].(*rsa.PrivateKey); !ok {
+//			// do some kind of error
+//		}
+//
 package pemutil
 
 import (
