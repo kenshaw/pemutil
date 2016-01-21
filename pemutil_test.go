@@ -110,7 +110,6 @@ Header: 1
 
 func testPEM(i int, name string, exp []BlockType, t *testing.T) {
 	filepath := "testdata/" + name
-	//base := path.Base(fn)
 
 	// load different ways, depending on i
 	var item interface{}

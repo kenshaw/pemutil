@@ -2,7 +2,8 @@
 
 A [Golang](https://golang.org/project) package that provides a very light
 wrapper around PEM encoded data, meant to streamline the decoding of PEM data
-into a usable store.
+into a usable store of standard [crypto](https://golang.org/pkg/crypto/)
+primitives.
 
 ## Installation ##
 

@@ -1,5 +1,6 @@
-// Package pemutil provides various utility methods to assist in the decoding
-// of PEM data into its constituent parts via a simple, high-level API.
+// Package pemutil provides a simple, high-level API to load standard crypto
+// primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc) from PEM data
+// in-memory, on disk, etc.
 package pemutil
 
 import (
@@ -12,22 +13,21 @@ import (
 	"reflect"
 )
 
-// PEM is a set of PEM encoded data, of bytes ([]byte), io.Reader's or
-// filenames.
+// PEM is the set of PEM encoded data to be parsed and decoded. Each item in
+// PEM must be a byte slice, an io.Reader, or a string (assumed to be a
+// filename).
 //
-// After instantiating this, objects
+// Standard crypto primitives (ie, rsa.PrivateKey, etc)  can then be loaded
+// into a Store via a call to PEM.Load(Store).
 type PEM []interface{}
 
 // BlockType is a PEM block type.
 type BlockType string
 
-// String satisfies the string interface.
+// String satisfies the string interface for a block type.
 func (bt BlockType) String() string {
 	return string(bt)
 }
-
-// Store is a store for decoded PEM block types.
-type Store map[BlockType]interface{}
 
 const (
 	// PrivateKey is the "PRIVATE KEY" block type.
@@ -46,23 +46,26 @@ const (
 	Certificate BlockType = "CERTIFICATE"
 )
 
+// Store is a store for decoded PEM block types.
+type Store map[BlockType]interface{}
+
 // parsePKCSPrivateKey attempts to decode a RSA private key using first PKCS1
 // encoding, and then PKCS8 encoding.
 func parsePKCSPrivateKey(buf []byte) (interface{}, error) {
-	var key interface{}
-
 	// attempt PKCS1 parsing
 	key, err := x509.ParsePKCS1PrivateKey(buf)
 	if err != nil {
-		// if there was a failure, then attempt PKCS8
+		// attempt PKCS8 parsing
 		return x509.ParsePKCS8PrivateKey(buf)
 	}
 
 	return key, nil
 }
 
-// DecodePEM decodes the PEM data from buf into the provided store.
-func DecodePEM(store map[BlockType]interface{}, buf []byte) error {
+// DecodePEM decodes the PEM data from buf, storing any resulting crypto
+// primitives into the provided store using the PEM BlockType as the store map
+// key.
+func DecodePEM(store Store, buf []byte) error {
 	var block *pem.Block
 
 	// loop over blocks and parse the data, storing the resulting blocktype
@@ -74,30 +77,27 @@ func DecodePEM(store map[BlockType]interface{}, buf []byte) error {
 		}
 
 		switch BlockType(block.Type) {
+		// decode private key
 		case PrivateKey:
-			var key interface{}
-
-			// try pkcs1 and pkcs8 decoding first (ie, mislabeled RSA key)
+			// try pkcs1 and pkcs8 decoding first
 			key, err := parsePKCSPrivateKey(block.Bytes)
 			if err != nil {
-				// use raw bytes
+				// use the raw b64 decoded bytes
 				key = block.Bytes
 			}
 			store[PrivateKey] = key
 
-		// base64 decode public key
+		// decode public key
 		case PublicKey:
-			var key interface{}
-
-			// do initial parse
+			// initial parse
 			key, err := x509.ParsePKIXPublicKey(block.Bytes)
 			if err != nil {
-				// use raw bytes
+				// use the raw b64 decoded bytes
 				key = block.Bytes
 			}
 			store[PublicKey] = key
 
-		// parse rsa private key using pkcs1 and then pkcs8
+		// decode rsa private key, attempting parsing using pkcs1, then pkcs8
 		case RSAPrivateKey:
 			key, err := parsePKCSPrivateKey(block.Bytes)
 			if err != nil {
@@ -105,7 +105,7 @@ func DecodePEM(store map[BlockType]interface{}, buf []byte) error {
 			}
 			store[RSAPrivateKey] = key
 
-		// parse ec private key using x509
+		// decode ec private key
 		case ECPrivateKey:
 			key, err := x509.ParseECPrivateKey(block.Bytes)
 			if err != nil {
@@ -113,7 +113,7 @@ func DecodePEM(store map[BlockType]interface{}, buf []byte) error {
 			}
 			store[ECPrivateKey] = key
 
-		// parse with x509
+		// decode certificate
 		case Certificate:
 			cert, err := x509.ParseCertificate(block.Bytes)
 			if err != nil {
@@ -129,10 +129,18 @@ func DecodePEM(store map[BlockType]interface{}, buf []byte) error {
 	return nil
 }
 
-// Load reads the data from PEM and loads them into store, if possible. If an
-// error is encountered, then it will be returned.
+// Load inspects the types of each item in PEM, parsing and decoding the
+// PEM-encoded data. Raw PEM data will be parsed and decoded from provided byte
+// slices, and io.Reader's, and additionally, as a convenience,  any item of
+// type string will be treated as a filename, from which the PEM data will be
+// parsed and decoded.
 //
-// Allowed PEM types can be raw PEM data ([]byte, or io.Reader) or a filename.
+// The resulting crypto primitives (ie, rsa.PrivateKey, etc) decoded from the
+// PEM data will then be stored under its respective BlockType in the store,
+// with the BlockType as the store's map key.
+//
+// Crypto primitives can then be retrieved from the store, and type asserted
+// into the its expected type (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc).
 func (p PEM) Load(store map[BlockType]interface{}) error {
 	var buf []byte
 	var err error
@@ -140,26 +148,29 @@ func (p PEM) Load(store map[BlockType]interface{}) error {
 	// loop over data and attempt decoding
 	for i, c := range p {
 		switch obj := c.(type) {
-		case string: // assume filename
+		// treat string as filename
+		case string:
 			buf, err = ioutil.ReadFile(obj)
 			if err != nil {
 				return err
 			}
 
-		case []byte: // raw pem data
-			buf = obj
-
-		case io.Reader: // reader
+		// reader
+		case io.Reader:
 			buf, err = ioutil.ReadAll(obj)
 			if err != nil {
 				return err
 			}
 
+		// raw bytes
+		case []byte:
+			buf = obj
+
 		default:
-			return fmt.Errorf("Load encountered invalid type %s at position %d. PEM data must be of type string, []byte, or io.Reader", reflect.TypeOf(c), i)
+			return fmt.Errorf("encountered invalid type '%s' at position %d. PEM data must be of type string, io.Reader, or []byte", reflect.TypeOf(c), i)
 		}
 
-		// load the PEM into the store
+		// decode PEM into store
 		err = DecodePEM(store, buf)
 		if err != nil {
 			return err
