@@ -81,7 +81,7 @@ func DecodePEM(store Store, buf []byte) error {
 	for len(buf) > 0 {
 		block, buf = pem.Decode(buf)
 		if block == nil {
-			return errors.New("invalid PEM data")
+			return errors.New("DecodePEM: invalid PEM data")
 		}
 
 		switch BlockType(block.Type) {
@@ -131,7 +131,7 @@ func DecodePEM(store Store, buf []byte) error {
 			store[Certificate] = cert
 
 		default:
-			return fmt.Errorf("encountered unknown block type %s", block.Type)
+			return fmt.Errorf("DecodePEM: encountered unknown block type %s", block.Type)
 		}
 	}
 
@@ -163,7 +163,7 @@ func (p PEM) Load(store map[BlockType]interface{}) error {
 	var err error
 
 	// loop over data and attempt decoding
-	for i, c := range p {
+	for _, c := range p {
 		switch obj := c.(type) {
 		// treat string as filename
 		case string:
@@ -184,7 +184,7 @@ func (p PEM) Load(store map[BlockType]interface{}) error {
 			buf = obj
 
 		default:
-			return fmt.Errorf("encountered invalid type '%s' at position %d. PEM data must be of type string, io.Reader, or []byte", reflect.TypeOf(c), i)
+			return fmt.Errorf("Load: unrecognized type %s", reflect.TypeOf(c))
 		}
 
 		// decode PEM into store
