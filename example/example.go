@@ -6,10 +6,8 @@ package main
 
 import (
 	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
-	"fmt"
 	"log"
+	"os"
 	"reflect"
 
 	"github.com/knq/pemutil"
@@ -35,22 +33,11 @@ func main() {
 		log.Fatalln("generated key and public key don't match")
 	}
 
-	// encode key and pub key
-	keyBuf := x509.MarshalPKCS1PrivateKey(key)
-	pubKeyBuf, err := x509.MarshalPKIXPublicKey(pubKey)
+	// get pem data
+	pemBuf, err := store.Bytes()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	// encode the data back into
-	fmt.Printf("%s%s",
-		pem.EncodeToMemory(&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: keyBuf,
-		}),
-		pem.EncodeToMemory(&pem.Block{
-			Type:  "PUBLIC KEY",
-			Bytes: pubKeyBuf,
-		}),
-	)
+	os.Stdout.Write(pemBuf)
 }

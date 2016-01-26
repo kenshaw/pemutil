@@ -14,6 +14,11 @@
 package pemutil
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -57,6 +62,46 @@ const (
 
 // Store is a store for decoded crypto primitives (ie, rsa.PrivateKey, etc).
 type Store map[BlockType]interface{}
+
+// Bytes returns all crypto primitives in the store as a single byte slice
+// containing the EM-encoded versions of the crypto primitives.
+func (s Store) Bytes() ([]byte, error) {
+	var err error
+	var res bytes.Buffer
+
+	for k, p := range s {
+		var buf []byte
+
+		switch v := p.(type) {
+		case []byte:
+			buf = v
+
+		case *rsa.PrivateKey:
+			buf = x509.MarshalPKCS1PrivateKey(v)
+
+		case *ecdsa.PrivateKey:
+			buf, err = x509.MarshalECPrivateKey(v)
+
+		case *rsa.PublicKey, *ecdsa.PublicKey:
+			buf, err = x509.MarshalPKIXPublicKey(v)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// encode and add to buffer
+		err = pem.Encode(&res, &pem.Block{
+			Type:  k.String(),
+			Bytes: buf,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return res.Bytes(), nil
+}
 
 // parsePKCSPrivateKey attempts to decode a RSA private key first using PKCS1
 // encoding, and then PKCS8 encoding.
@@ -158,7 +203,7 @@ func DecodePEM(store Store, buf []byte) error {
 //			// do some kind of error
 //		}
 //
-func (p PEM) Load(store map[BlockType]interface{}) error {
+func (p PEM) Load(store Store) error {
 	var buf []byte
 	var err error
 
@@ -195,4 +240,49 @@ func (p PEM) Load(store map[BlockType]interface{}) error {
 	}
 
 	return nil
+}
+
+// GenerateSymmetricKeySet generates a private key crypto primitive, returning
+// it as a Store.
+func GenerateSymmetricKeySet(len int) (Store, error) {
+	// generate random bytes
+	buf := make([]byte, len)
+	c, err := rand.Read(buf)
+	if err != nil {
+		return nil, err
+	} else if c != len {
+		return nil, fmt.Errorf("could not generate %d random key bits", len)
+	}
+
+	store := make(Store)
+	store[PrivateKey] = buf
+	return store, nil
+}
+
+// GenerateRSAKeySet generates a RSA private and public key crypto primitives,
+// returning them as a Store.
+func GenerateRSAKeySet(bitLen int) (Store, error) {
+	key, err := rsa.GenerateKey(rand.Reader, bitLen)
+	if err != nil {
+		return nil, err
+	}
+
+	store := make(Store)
+	store[RSAPrivateKey] = key
+	store[PublicKey] = key.Public()
+	return store, nil
+}
+
+// GenerateECKeySet generates a EC private and public key crypto primitives,
+// returning them as a Store.
+func GenerateECKeySet(curve elliptic.Curve) (Store, error) {
+	key, err := ecdsa.GenerateKey(curve, rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	store := make(Store)
+	store[ECPrivateKey] = key
+	store[PublicKey] = key.Public()
+	return store, nil
 }

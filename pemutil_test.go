@@ -2,6 +2,7 @@ package pemutil
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"errors"
 	"io/ioutil"
 	"path"
@@ -202,6 +203,72 @@ func TestTestdata(t *testing.T) {
 			testPEM(i, fn, test, t)
 		}
 	}
+}
+
+func TestGenKeys(t *testing.T) {
+	symStore, err := GenerateSymmetricKeySet(256)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	rsaStore, err := GenerateRSAKeySet(2048)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	ecStore, err := GenerateECKeySet(elliptic.P521())
+	if err != nil {
+		t.Fatalf("expcted no error, got: %v", err)
+	}
+
+	for i, s := range []Store{symStore, rsaStore, ecStore} {
+		// serialize
+		buf, err := s.Bytes()
+		if err != nil {
+			t.Errorf("test %d expected no error, got: %v", i, err)
+			continue
+		}
+		if len(buf) == 0 {
+			t.Errorf("test %d buf len should not be 0", i)
+			continue
+		}
+
+		// unserialize
+		s0 := make(Store)
+		err = PEM{buf}.Load(s0)
+		if err != nil {
+			t.Errorf("test %d expected no error, got: %v", err)
+			continue
+		}
+		if len(s) != len(s0) {
+			t.Errorf("test %d s should have same length as s0 after load (%d!=%d)", i, len(s), len(s0))
+			continue
+		}
+
+		// check that the same keys present
+		sKeys := keys(s)
+		s0Keys := keys(s0)
+		if len(sKeys) != len(s0Keys) {
+			t.Errorf("test %d sKeys and s0Keys should have same len", i)
+			continue
+		}
+		for j, k := range sKeys {
+			if k != s0Keys[j] {
+				t.Errorf("test %d key %d should be %s, got: %s", i, j, k, s0Keys[j])
+				continue
+			}
+		}
+	}
+}
+
+func keys(s Store) []BlockType {
+	k := make([]BlockType, len(s))
+	i := 0
+	for key, _ := range s {
+		k[i] = key
+		i++
+	}
+	return k
 }
 
 type badReader struct{}
