@@ -63,41 +63,64 @@ const (
 // Store is a store for decoded crypto primitives (ie, rsa.PrivateKey, etc).
 type Store map[BlockType]interface{}
 
-// Bytes returns all crypto primitives in the store as a single byte slice
-// containing the EM-encoded versions of the crypto primitives.
-func (s Store) Bytes() ([]byte, error) {
+// EncodePrimitive is a utility func to quickly encode a crypto primitive obj
+// into PEM-encoded data.
+func EncodePrimitive(obj interface{}) ([]byte, error) {
 	var err error
-	var res bytes.Buffer
+	var blockType BlockType
+	var buf []byte
 
-	for k, p := range s {
-		var buf []byte
+	switch v := obj.(type) {
+	case []byte:
+		blockType = PrivateKey
+		buf = v
 
-		switch v := p.(type) {
-		case []byte:
-			buf = v
+	case *rsa.PrivateKey:
+		blockType = RSAPrivateKey
+		buf = x509.MarshalPKCS1PrivateKey(v)
 
-		case *rsa.PrivateKey:
-			buf = x509.MarshalPKCS1PrivateKey(v)
-
-		case *ecdsa.PrivateKey:
-			buf, err = x509.MarshalECPrivateKey(v)
-
-		case *rsa.PublicKey, *ecdsa.PublicKey:
-			buf, err = x509.MarshalPKIXPublicKey(v)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// encode and add to buffer
-		err = pem.Encode(&res, &pem.Block{
-			Type:  k.String(),
-			Bytes: buf,
-		})
+	case *ecdsa.PrivateKey:
+		blockType = ECPrivateKey
+		buf, err = x509.MarshalECPrivateKey(v)
 		if err != nil {
 			return nil, err
 		}
 
+	case *rsa.PublicKey, *ecdsa.PublicKey:
+		blockType = PublicKey
+		buf, err = x509.MarshalPKIXPublicKey(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// encode and add to buffer
+	pemBuf := pem.EncodeToMemory(&pem.Block{
+		Type:  blockType.String(),
+		Bytes: buf,
+	})
+
+	return pemBuf, nil
+}
+
+// Bytes returns all crypto primitives in the store as a single byte slice
+// containing the EM-encoded versions of the crypto primitives.
+func (s Store) Bytes() ([]byte, error) {
+	var res bytes.Buffer
+
+	// loop over all primitives and add to res
+	for _, p := range s {
+		// encode primitive
+		buf, err := EncodePrimitive(p)
+		if err != nil {
+			return nil, err
+		}
+
+		// add to buf
+		_, err = res.Write(buf)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return res.Bytes(), nil
