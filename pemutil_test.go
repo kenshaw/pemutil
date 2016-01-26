@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"path"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -261,13 +262,29 @@ func TestGenKeys(t *testing.T) {
 	}
 }
 
-func keys(s Store) []BlockType {
-	k := make([]BlockType, len(s))
+type BlockTypeKeys []BlockType
+
+func (btk BlockTypeKeys) Len() int {
+	return len(btk)
+}
+
+func (btk BlockTypeKeys) Swap(i, j int) {
+	btk[i], btk[j] = btk[j], btk[i]
+}
+
+func (btk BlockTypeKeys) Less(i, j int) bool {
+	return strings.Compare(btk[i].String(), btk[j].String()) < 0
+}
+
+func keys(s Store) BlockTypeKeys {
+	k := make(BlockTypeKeys, len(s))
 	i := 0
 	for key, _ := range s {
 		k[i] = key
 		i++
 	}
+	sort.Sort(k)
+
 	return k
 }
 
