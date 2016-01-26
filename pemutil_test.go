@@ -238,7 +238,7 @@ func TestGenKeys(t *testing.T) {
 		s0 := make(Store)
 		err = PEM{buf}.Load(s0)
 		if err != nil {
-			t.Errorf("test %d expected no error, got: %v", err)
+			t.Errorf("test %d expected no error, got: %v", i, err)
 			continue
 		}
 		if len(s) != len(s0) {
@@ -279,7 +279,7 @@ func (btk BlockTypeKeys) Less(i, j int) bool {
 func keys(s Store) BlockTypeKeys {
 	k := make(BlockTypeKeys, len(s))
 	i := 0
-	for key, _ := range s {
+	for key := range s {
 		k[i] = key
 		i++
 	}
