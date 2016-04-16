@@ -1,5 +1,8 @@
 package main
 
+// A simple command line util making to generate suitable keyset data for use
+// with the pemutil package.
+
 import (
 	"crypto/elliptic"
 	"errors"
@@ -13,8 +16,8 @@ import (
 
 var (
 	flagAlg    = flag.String("t", "", "key type (sym, rsa, ecc)")
-	flagKeyLen = flag.Int("l", 0, "key length (sym, rsa)")
-	flagCurve  = flag.String("c", "", "curve name (ecc: P)")
+	flagKeyLen = flag.Int("l", 0, "key length for -t sym or -t rsa (512, 1024, 2048, 4096, ...)")
+	flagCurve  = flag.String("c", "", "curve name for -t ecc (P224, P256, P384, P521)")
 )
 
 func main() {
@@ -65,6 +68,7 @@ Generate:
 	// check for errors
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		flag.Usage()
 		os.Exit(1)
 	}
 
