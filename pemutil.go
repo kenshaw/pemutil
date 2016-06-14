@@ -104,7 +104,7 @@ func EncodePrimitive(obj interface{}) ([]byte, error) {
 }
 
 // Bytes returns all crypto primitives in the store as a single byte slice
-// containing the EM-encoded versions of the crypto primitives.
+// containing the PEM-encoded versions of the crypto primitives.
 func (s Store) Bytes() ([]byte, error) {
 	var res bytes.Buffer
 
