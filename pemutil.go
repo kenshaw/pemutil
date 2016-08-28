@@ -29,10 +29,11 @@ import (
 )
 
 // PEM is a set of PEM-encoded data. Each item in PEM must be a byte slice, an
-// io.Reader, or a string (assumed to be a filename).
+// io.Reader, or a string (strings are assumed to be a filename).
 //
-// Standard crypto primitives (ie, rsa.PrivateKey, etc) can then be loaded into
-// a Store via a call to Load.
+// Standard crypto primitives (ie, rsa.PrivateKey/PublicKey,
+// ecdsa.PrivateKey/PublicKey, etc) can then be loaded into a Store via a call
+// to Load.
 type PEM []interface{}
 
 // BlockType is a PEM block type.
@@ -60,11 +61,10 @@ const (
 	Certificate BlockType = "CERTIFICATE"
 )
 
-// Store is a store for decoded crypto primitives (ie, rsa.PrivateKey, etc).
+// Store is a store containing crypto primitives (ie, rsa.PrivateKey,,  etc).
 type Store map[BlockType]interface{}
 
-// EncodePrimitive is a utility func to quickly encode a crypto primitive obj
-// into PEM-encoded data.
+// EncodePrimitive encodes the crypto primitive obj into PEM-encoded data.
 func EncodePrimitive(obj interface{}) ([]byte, error) {
 	var err error
 	var blockType BlockType
@@ -92,6 +92,9 @@ func EncodePrimitive(obj interface{}) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
+	default:
+		return nil, errors.New("EncodePrimitive: unknown crypto primitive")
 	}
 
 	// encode and add to buffer
@@ -155,13 +158,15 @@ func DecodePEM(store Store, buf []byte) error {
 		switch BlockType(block.Type) {
 		// decode private key
 		case PrivateKey:
-			// try pkcs1 and pkcs8 decoding first
+			// try pkcs1 and pkcs8 decoding
 			key, err := parsePKCSPrivateKey(block.Bytes)
-			if err != nil {
-				// use the raw b64 decoded bytes
-				key = block.Bytes
+			if err == nil {
+				// rsa decoding was successful
+				store[RSAPrivateKey] = key
+			} else {
+				// otherwise just use the raw bytes (ie, the decoded b64 value)
+				store[PrivateKey] = block.Bytes
 			}
-			store[PrivateKey] = key
 
 		// decode public key
 		case PublicKey:

@@ -196,7 +196,7 @@ func TestTestdata(t *testing.T) {
 			case "r": // rsa pkcs1
 				test = getExpBlockType(suffix, RSAPrivateKey, PublicKey)
 			case "p": // rsa pkcs8
-				test = getExpBlockType(suffix, PrivateKey, PublicKey)
+				test = getExpBlockType(suffix, RSAPrivateKey, PublicKey)
 			case "c": // certificate
 				test = []BlockType{Certificate}
 			}
