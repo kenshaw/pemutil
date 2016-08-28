@@ -319,8 +319,10 @@ func GenerateECKeySet(curve elliptic.Curve) (Store, error) {
 	return store, nil
 }
 
-// GeneratePublicKeys checks if a ECPrivateKey or RSAPrivateKey is present, and
-// generates and stores the corresponding PublicKey block type.
+// GeneratePublicKeys checks if a RSAPrivateKey or ECPrivateKey block is
+// present, and generates and stores the corresponding PublicKey block type.
+//
+// Useful when only a private key has been provided.
 func GeneratePublicKeys(store Store) error {
 	// generate rsa public key
 	if key, ok := store[RSAPrivateKey]; ok {
