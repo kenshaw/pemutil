@@ -31,9 +31,8 @@ import (
 // PEM is a set of PEM-encoded data. Each item in PEM must be a byte slice, an
 // io.Reader, or a string (strings are assumed to be a filename).
 //
-// Standard crypto primitives (ie, rsa.PrivateKey/PublicKey,
-// ecdsa.PrivateKey/PublicKey, etc) can then be loaded into a Store via a call
-// to Load.
+// Standard crypto primitives can then be loaded into a Store via a call to
+// Load.
 type PEM []interface{}
 
 // BlockType is a PEM block type.
@@ -61,7 +60,12 @@ const (
 	Certificate BlockType = "CERTIFICATE"
 )
 
-// Store is a store containing crypto primitives (ie, rsa.PrivateKey,,  etc).
+// Store is a store containing crypto primitives.
+//
+// A store can contain any of the following crypto primitives:
+//     []byte 								-- raw key
+//     *rsa.PrivateKey, *ecdsa.PrivateKey   -- private key
+//     *rsa.PublicKey, *ecdsa.PublicKey     -- public key
 type Store map[BlockType]interface{}
 
 // EncodePrimitive encodes the crypto primitive obj into PEM-encoded data.
@@ -94,7 +98,7 @@ func EncodePrimitive(obj interface{}) ([]byte, error) {
 		}
 
 	default:
-		return nil, errors.New("EncodePrimitive: unknown crypto primitive")
+		return nil, errors.New("EncodePrimitive: unsupported crypto primitive")
 	}
 
 	// encode and add to buffer
@@ -313,4 +317,28 @@ func GenerateECKeySet(curve elliptic.Curve) (Store, error) {
 	store[ECPrivateKey] = key
 	store[PublicKey] = key.Public()
 	return store, nil
+}
+
+// GeneratePublicKeys checks if a ECPrivateKey or RSAPrivateKey is present, and
+// generates and stores the corresponding PublicKey block type.
+func GeneratePublicKeys(store Store) error {
+	// generate rsa public key
+	if key, ok := store[RSAPrivateKey]; ok {
+		rsaPrivKey, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return errors.New("GeneratePublicKeys: expected RSAPrivateKey to be *rsa.PrivateKey")
+		}
+		store[PublicKey] = rsaPrivKey.Public()
+	}
+
+	// generate ecdsa public key
+	if key, ok := store[ECPrivateKey]; ok {
+		ecdsaPrivKey, ok := key.(*ecdsa.PrivateKey)
+		if !ok {
+			return errors.New("GeneratePublicKeys: expected ECPrivateKey to be *ecdsa.PrivateKey")
+		}
+		store[PublicKey] = ecdsaPrivKey.Public()
+	}
+
+	return nil
 }
