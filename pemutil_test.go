@@ -1,7 +1,6 @@
 package pemutil
 
 import (
-	"bytes"
 	"crypto/elliptic"
 	"errors"
 	"io/ioutil"
@@ -18,19 +17,12 @@ func TestBlockTypeString(t *testing.T) {
 }
 
 func TestPEMErrors(t *testing.T) {
-	tests := []interface{}{
-		// non existent file
-		"nonexistent",
-
+	tests := []string{
 		// bad bytes
-		[]byte("----"),
-
-		// bad reader
-		strings.NewReader("---"),
-		&badReader{},
+		"----",
 
 		// bad rsa private key
-		[]byte(`-----BEGIN RSA PRIVATE KEY-----
+		`-----BEGIN RSA PRIVATE KEY-----
 miieowibaakcaqea4f5wg5l2hkstenem/v41fgnjm6godrj8ym3rfkeu/wt8rdtn
 sgfezoqphegq7jl38xufu0y3g6ayw9qt0hj7mcpz9er5qlamxjwzxzhzaahlfa0i
 cqabvjomvqtzd6uqv6wpeyztdtwiqi9axwbphsspnpygin20zzunlx2brclcihhc
@@ -56,17 +48,17 @@ mDgqkLECiOJW2NHP/j0McAkDLL4tysF8TLDO8gvuvzNC+WQ6drO2ThrypLVZQ+ry
 eBIPmwKBgEZxhqa0gVvHQG/7Od69KWj4eJP28kq13RhKay8JOoN0vPmspXJo1HY3
 CKuHRG+AP579dncdUnOMvfXOtkdM4vk0+hWASBQzM9xzVcztCa+koAugjVaLS9A+
 9uQoqEeVNTckxx0S2bYevRy7hGQmUJTyQm3j1zEUR5jpdbL83Fbq
------END RSA PRIVATE KEY-----`),
+-----END RSA PRIVATE KEY-----`,
 
 		// bad ec private key
-		[]byte(`-----BEGIN EC PRIVATE KEY-----
+		`-----BEGIN EC PRIVATE KEY-----
 mhccaqeeiah5qa3rmqqquu0vbkv/+zouz/y/iy2plpicwusyimswoaogccqgsm49
 awehouqdqgaeyd54v/vp+54p9dxaryqx4mpcm+hkriqznasysorqhq/6s6ps8tpm
 cT+KvIIC8W/e9k0W7Cm72M1P9jU7SLf/vg==
------END EC PRIVATE KEY-----`),
+-----END EC PRIVATE KEY-----`,
 
 		// bad certificate
-		[]byte(`-----BEGIN CERTIFICATE-----
+		`-----BEGIN CERTIFICATE-----
 miidxtccaq2gawibagibadanbgkqhkig9w0baqsfadcbgzelmakga1uebhmcvvmx
 edaobgnvbagtb0fyaxpvbmexezarbgnvbactclnjb3r0c2rhbguxgjaybgnvbaot
 eudvrgfkzhkuy29tlcbjbmmumtewlwydvqqdeyhhbybeywrkesbsb290ienlcnrp
@@ -88,22 +80,21 @@ gIOrmgIttRD02JDHBHNA7XIloKmf7J6raBKZV8aPEjoJpL1E/QYVN8Gb5DKj7Tjo
 2GTzLH4U/ALqn83/B2gX2yKQOC16jdFU8WnjXzPKej17CuPKf1855eJ1usV2GDPO
 LPAvTK33sefOT6jEm0pUBsV/fdUID+Ic/n4XuKxe9tQWskMJDE32p2u0mYRlynqI
 4uJEvlz36hz1
------END CERTIFICATE-----`),
+-----END CERTIFICATE-----`,
 
 		// bad block type
-		[]byte(`-----BEGIN HEADERS-----
+		`-----BEGIN HEADERS-----
 Header: 1
 
------END HEADERS-----`),
+-----END HEADERS-----`,
 
-		// bad
-		nil,
+		// empty
+		"",
 	}
 
 	for i, test := range tests {
-		p := PEM{test}
 		s := Store{}
-		err := p.Load(s)
+		err := s.Decode([]byte(test))
 		if err == nil {
 			t.Errorf("test %d expected error, got nil", i)
 		}
@@ -113,47 +104,23 @@ Header: 1
 func testPEM(i int, name string, exp []BlockType, t *testing.T) {
 	filepath := "testdata/" + name
 
-	// load different ways, depending on i
-	var item interface{}
-	switch i % 3 {
-	case 0: // let library load from the file
-		item = filepath
-
-	case 1: // as []byte
-		buf, err := ioutil.ReadFile(filepath)
-		if err != nil {
-			t.Errorf("test %d (%s) could not read data, got: %v", i, filepath, err)
-			return
-		}
-		item = buf
-
-	case 2: // as reader
-		buf, err := ioutil.ReadFile(filepath)
-		if err != nil {
-			t.Errorf("test %d (%s) could not read data, got: %v", i, filepath, err)
-			return
-		}
-
-		item = bytes.NewReader(buf)
-	}
-
 	// build PEM
-	store := Store{}
-	err := PEM{item}.Load(store)
+	s := Store{}
+	err := s.LoadFile(filepath)
 	if err != nil {
 		t.Errorf("test %d (%s) expected no error, got: %v", i, filepath, err)
 		return
 	}
 
 	// check that store len is same as exp len
-	if len(exp) != len(store) {
-		t.Errorf("test %d (%s) expected length should be %d, got: %d", i, filepath, len(exp), len(store))
+	if len(exp) != len(s) {
+		t.Errorf("test %d (%s) expected length should be %d, got: %d", i, filepath, len(exp), len(s))
 		return
 	}
 
 	// make sure that all the types are there
 	for _, bt := range exp {
-		if _, ok := store[bt]; !ok {
+		if _, ok := s[bt]; !ok {
 			t.Errorf("test %d (%s) should have %s, but not present", i, filepath, bt)
 		}
 	}
@@ -236,7 +203,7 @@ func TestGenKeys(t *testing.T) {
 
 		// unserialize
 		s0 := make(Store)
-		err = PEM{buf}.Load(s0)
+		err = s0.Decode(buf)
 		if err != nil {
 			t.Errorf("test %d expected no error, got: %v", i, err)
 			continue
