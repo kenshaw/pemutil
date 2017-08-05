@@ -25,40 +25,35 @@ package main
 //go:generate openssl rsa -in rsa-private.pem -outform PEM -pubout -out rsa-public.pem
 
 import (
-    "crypto/rsa"
-    "log"
-    "os"
-    "reflect"
+	"log"
+	"os"
 
-    "github.com/knq/pemutil"
+	"github.com/knq/pemutil"
 )
 
 func main() {
-    store := pemutil.Store{}
-    pemutil.PEM{"rsa-public.pem", "rsa-private.pem"}.Load(store)
+	var err error
 
-    var ok bool
-    var key *rsa.PrivateKey
-    var pubKey *rsa.PublicKey
+	// create store and load our private key
+	s := pemutil.Store{}
+	err = s.LoadFile("rsa-private.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    if key, ok = store[pemutil.RSAPrivateKey].(*rsa.PrivateKey); !ok {
-        log.Fatalln("key should be a *rsa.PrivateKey")
-    }
+	// ensure that the corresponding public key exists
+	err = s.AddPublicKeys()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    if pubKey, ok = store[pemutil.PublicKey].(*rsa.PublicKey); !ok {
-        log.Fatalln("public key should be *rsa.PublicKey")
-    }
+	// do something with s[pemutil.RSAPrivateKey]
 
-    if !reflect.DeepEqual(pubKey, &key.PublicKey) {
-        log.Fatalln("generated key and public key don't match")
-    }
-
-    // get pem data
-    pemBuf, err := store.Bytes()
-    if err != nil {
-        log.Fatalln(err)
-    }
-
-    os.Stdout.Write(pemBuf)
+	// get pem data
+	buf, err := s.Bytes()
+	if err != nil {
+		log.Fatal(err)
+	}
+	os.Stdout.Write(buf)
 }
 ```
