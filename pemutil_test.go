@@ -2,7 +2,6 @@ package pemutil
 
 import (
 	"crypto/elliptic"
-	"errors"
 	"io/ioutil"
 	"path"
 	"sort"
@@ -253,10 +252,4 @@ func keys(s Store) BlockTypeKeys {
 	sort.Sort(k)
 
 	return k
-}
-
-type badReader struct{}
-
-func (br badReader) Read(p []byte) (int, error) {
-	return 0, errors.New("error")
 }
