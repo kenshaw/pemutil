@@ -34,10 +34,10 @@ const (
 func parsePKCSPrivateKey(buf []byte) (interface{}, error) {
 	// attempt PKCS1 parsing
 	key, err := x509.ParsePKCS1PrivateKey(buf)
-	if err != nil {
-		// attempt PKCS8 parsing
-		return x509.ParsePKCS8PrivateKey(buf)
+	if err == nil {
+		return key, nil
 	}
 
-	return key, nil
+	// attempt PKCS8 parsing
+	return x509.ParsePKCS8PrivateKey(buf)
 }

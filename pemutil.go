@@ -64,14 +64,14 @@ func EncodePrimitive(p interface{}) ([]byte, error) {
 
 // GenerateSymmetricKeySet generates a private key crypto primitive, returning
 // it as a Store.
-func GenerateSymmetricKeySet(len int) (Store, error) {
+func GenerateSymmetricKeySet(keyLen int) (Store, error) {
 	// generate random bytes
-	buf := make([]byte, len)
+	buf := make([]byte, keyLen)
 	c, err := rand.Read(buf)
 	if err != nil {
 		return nil, err
-	} else if c != len {
-		return nil, fmt.Errorf("could not generate %d random key bits", len)
+	} else if c != keyLen {
+		return nil, fmt.Errorf("could not generate %d random key bits", keyLen)
 	}
 
 	return Store{
