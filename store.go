@@ -235,6 +235,13 @@ func (s Store) LoadFile(filename string) error {
 	return Decode(s, buf)
 }
 
+// LoadFile creates a store and loads any crypto primitives in the PEM encoded
+// data stored in filename.
+func LoadFile(filename string) (Store, error) {
+	s := make(Store)
+	return s, s.LoadFile(filename)
+}
+
 // WriteFile writes the crypto primitives in the store to filename with mode
 // 0600.
 func (s Store) WriteFile(filename string) error {
