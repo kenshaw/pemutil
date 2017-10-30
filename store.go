@@ -61,30 +61,20 @@ func (s Store) Bytes() ([]byte, error) {
 // already present.
 //
 // Useful when a Store is missing the public key for a private key.
-func (s Store) AddPublicKeys() error {
-	// generate rsa public key
-	if key, ok := s[RSAPrivateKey]; ok {
-		rsaPrivKey, ok := key.(*rsa.PrivateKey)
-		if !ok {
-			return errors.New("block type RSAPrivateKey does not contain *rsa.PrivateKey")
-		}
-		if _, ok = s[PublicKey]; !ok {
-			return s.add(PublicKey, rsaPrivKey.Public())
-		}
+func (s Store) AddPublicKeys() {
+	if _, ok := s[PublicKey]; ok {
+		return
 	}
 
-	// generate ecdsa public key
-	if key, ok := s[ECPrivateKey]; ok {
-		ecdsaPrivKey, ok := key.(*ecdsa.PrivateKey)
-		if !ok {
-			return errors.New("block type ECPrivateKey does not contain *ecdsa.PrivateKey")
-		}
-		if _, ok = s[PublicKey]; !ok {
-			return s.add(PublicKey, ecdsaPrivKey.Public())
+	for _, typ := range []BlockType{PrivateKey, RSAPrivateKey, ECPrivateKey} {
+		if key, ok := s[typ]; ok {
+			if v, ok := key.(interface {
+				Public() crypto.PublicKey
+			}); ok {
+				s[PublicKey] = v.Public()
+			}
 		}
 	}
-
-	return nil
 }
 
 // Decode parses and decodes PEM-encoded data from buf, storing any resulting
@@ -232,14 +222,27 @@ func (s Store) LoadFile(filename string) error {
 		return err
 	}
 
-	return Decode(s, buf)
+	err = Decode(s, buf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // LoadFile creates a store and loads any crypto primitives in the PEM encoded
 // data stored in filename.
+//
+// Note: calls AddPublicKeys() after successfully loading a file. If that
+// behavior is not desired, please manually create the store and call Decode,
+// or DecodeBlock.
 func LoadFile(filename string) (Store, error) {
 	s := make(Store)
-	return s, s.LoadFile(filename)
+	if err := s.LoadFile(filename); err != nil {
+		return nil, err
+	}
+	s.AddPublicKeys()
+	return s, nil
 }
 
 // WriteFile writes the crypto primitives in the store to filename with mode

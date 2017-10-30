@@ -4,12 +4,11 @@
 //
 // The pemutil package commonly used similar to the following:
 //
-//		store := pemutil.Store{}
-//		err := store.LoadFile("/path/to/file")
+//		store, err := pemutil.LoadFile("/path/to/file")
 // 		if err != nil { /* ... */ }
 //
-//		if rsaPrivKey, ok := store[pemutil.RSAPrivateKey].(*rsa.PrivateKey); !ok {
-//			// do some kind of error
+//		if rsaPrivKey, ok := store.RSAPrivateKey(); !ok {
+//			// PEM does not contain an RSA private key
 //		}
 //
 package pemutil
