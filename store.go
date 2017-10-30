@@ -222,12 +222,7 @@ func (s Store) LoadFile(filename string) error {
 		return err
 	}
 
-	err = Decode(s, buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return Decode(s, buf)
 }
 
 // LoadFile creates a store and loads any crypto primitives in the PEM encoded
