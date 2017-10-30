@@ -2,6 +2,7 @@ package pemutil
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
@@ -90,35 +91,16 @@ func (s Store) AddPublicKeys() error {
 // crypto primitives encountered into the Store. The decoded PEM BlockType will
 // be used as the map key for each primitive.
 func (s Store) Decode(buf []byte) error {
-	var err error
-	var block *pem.Block
-
-	// loop over pem encoded data
-	for len(buf) > 0 {
-		block, buf = pem.Decode(buf)
-		if block == nil {
-			return errors.New("invalid PEM data")
-		}
-
-		err = s.addBlock(block)
-		if err != nil {
-			return err
-		}
-	}
-
-	if len(s) == 0 {
-		return errors.New("could not decode any PEM blocks")
-	}
-
-	return nil
+	return Decode(s, buf)
 }
 
-// addBlock decodes PEM block data, adding any crypto primitive to the store.
-func (s Store) addBlock(block *pem.Block) error {
+// DecodeBlock decodes PEM block data, adding any crypto primitive encountered the
+// store.
+func (s Store) DecodeBlock(block *pem.Block) error {
 	switch BlockType(block.Type) {
 	case PrivateKey:
 		// try pkcs1 and then pkcs8 decoding
-		key, err := parsePKCSPrivateKey(block.Bytes)
+		key, err := ParsePKCSPrivateKey(block.Bytes)
 		if err == nil {
 			return s.add(RSAPrivateKey, key)
 		}
@@ -136,7 +118,7 @@ func (s Store) addBlock(block *pem.Block) error {
 
 	case RSAPrivateKey:
 		// try pkcs1 then pkcs8 decoding
-		key, err := parsePKCSPrivateKey(block.Bytes)
+		key, err := ParsePKCSPrivateKey(block.Bytes)
 		if err != nil {
 			return err
 		}
@@ -170,6 +152,79 @@ func (s Store) add(typ BlockType, v interface{}) error {
 	return nil
 }
 
+// PublicKey returns the public key contained within the store.
+func (s Store) PublicKey() (crypto.PublicKey, bool) {
+	v, ok := s[PublicKey]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(crypto.PublicKey)
+	return z, ok
+}
+
+// PrivateKey returns the private key contained within the store.
+func (s Store) PrivateKey() (crypto.PrivateKey, bool) {
+	for _, typ := range []BlockType{PrivateKey, RSAPrivateKey, ECPrivateKey} {
+		v, ok := s[typ]
+		if ok {
+			z, ok := v.(crypto.PrivateKey)
+			return z, ok
+		}
+	}
+
+	return nil, false
+}
+
+// RSAPublicKey returns the RSA public key contained within the store.
+func (s Store) RSAPublicKey() (*rsa.PublicKey, bool) {
+	v, ok := s[PublicKey]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(*rsa.PublicKey)
+	return z, ok
+}
+
+// RSAPrivateKey returns the RSA private key contained within the store.
+func (s Store) RSAPrivateKey() (*rsa.PrivateKey, bool) {
+	v, ok := s[RSAPrivateKey]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(*rsa.PrivateKey)
+	return z, ok
+}
+
+// ECPublicKey returns the ECDSA public key contained within the store.
+func (s Store) ECPublicKey() (*ecdsa.PublicKey, bool) {
+	v, ok := s[PublicKey]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(*ecdsa.PublicKey)
+	return z, ok
+}
+
+// ECPrivateKey returns the ECDSA private key contained within the store.
+func (s Store) ECPrivateKey() (*ecdsa.PrivateKey, bool) {
+	v, ok := s[ECPrivateKey]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(*ecdsa.PrivateKey)
+	return z, ok
+}
+
+// Certificate returns the X509 certificate contained within the store.
+func (s Store) Certificate() (*x509.Certificate, bool) {
+	v, ok := s[Certificate]
+	if !ok {
+		return nil, false
+	}
+	z, ok := v.(*x509.Certificate)
+	return z, ok
+}
+
 // LoadFile loads crypto primitives from PEM encoded data stored in filename.
 func (s Store) LoadFile(filename string) error {
 	buf, err := ioutil.ReadFile(filename)
@@ -177,5 +232,16 @@ func (s Store) LoadFile(filename string) error {
 		return err
 	}
 
-	return s.Decode(buf)
+	return Decode(s, buf)
+}
+
+// WriteFile writes the crypto primitives in the store to filename with mode
+// 0600.
+func (s Store) WriteFile(filename string) error {
+	buf, err := s.Bytes()
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filename, buf, 0600)
 }

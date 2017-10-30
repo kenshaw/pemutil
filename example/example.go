@@ -27,7 +27,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// do something with s[pemutil.RSAPrivateKey]
+	// do something with s.RSAPrivateKey()
 
 	// get pem data
 	buf, err := s.Bytes()
