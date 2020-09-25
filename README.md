@@ -8,7 +8,9 @@ data into standard [crypto](https://golang.org/pkg/crypto/) primitives.
 
 Install the package via the following:
 
-    go get -u github.com/kenshaw/pemutil
+```sh
+$ go get -u github.com/kenshaw/pemutil
+```
 
 ## Usage
 
