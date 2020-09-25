@@ -1,24 +1,24 @@
-# About pemutil [![Build Status](https://travis-ci.org/knq/pemutil.svg)](https://travis-ci.org/knq/pemutil) [![Coverage Status](https://coveralls.io/repos/knq/pemutil/badge.svg?branch=master&service=github)](https://coveralls.io/github/knq/pemutil?branch=master) #
+# pemutil
 
-A [Golang](https://golang.org/project) package that provides a light wrapper to
+A [Go](https://golang.org/project) package that provides a light wrapper to
 load PEM-encoded data, meant to ease the loading, parsing and decoding of PEM
 data into standard [crypto](https://golang.org/pkg/crypto/) primitives.
 
-## Installation ##
+## Installation
 
 Install the package via the following:
 
-    go get -u github.com/knq/pemutil
+    go get -u github.com/kenshaw/pemutil
 
-## Usage ##
+## Usage
 
-Please see [the GoDoc API page](http://godoc.org/github.com/knq/pemutil) for a
+Please see [the GoDoc API page](http://godoc.org/github.com/kenshaw/pemutil) for a
 full API listing.
 
 The pemutil package can be used similarly to the following:
 
 ```go
-// example/main.go
+// _example/main.go
 package main
 
 //go:generate openssl genrsa -out rsa-private.pem 2048
@@ -28,7 +28,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/pemutil"
 )
 
 func main() {

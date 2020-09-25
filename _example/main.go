@@ -1,4 +1,4 @@
-// example/main.go
+// _example/main.go
 package main
 
 //go:generate openssl genrsa -out rsa-private.pem 2048
@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/knq/pemutil"
+	"github.com/kenshaw/pemutil"
 )
 
 func main() {

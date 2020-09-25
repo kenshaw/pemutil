@@ -1,1 +1,3 @@
-module github.com/knq/pemutil
+module github.com/kenshaw/pemutil
+
+go 1.15

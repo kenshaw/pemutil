@@ -1,4 +1,6 @@
-coverage.out
-example/example
-cmd/pemutil/pemutil
+/_example/_example
+/_example/_example.exe
+/cmd/pemutil/pemutil
+/cmd/pemutil/pemutil.exe
 /pemutil
+/pemutil.exe
