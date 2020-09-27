@@ -90,11 +90,9 @@ Header: 1
 		// empty
 		"",
 	}
-
 	for i, test := range tests {
 		s := Store{}
-		err := s.Decode([]byte(test))
-		if err == nil {
+		if err := s.Decode([]byte(test)); err == nil {
 			t.Errorf("test %d expected error, got nil", i)
 		}
 	}
@@ -102,21 +100,17 @@ Header: 1
 
 func testPEM(i int, name string, exp []BlockType, t *testing.T) {
 	filepath := "testdata/" + name
-
 	// build PEM
 	s := Store{}
-	err := s.LoadFile(filepath)
-	if err != nil {
+	if err := s.LoadFile(filepath); err != nil {
 		t.Errorf("test %d (%s) expected no error, got: %v", i, filepath, err)
 		return
 	}
-
 	// check that store len is same as exp len
 	if len(exp) != len(s) {
 		t.Errorf("test %d (%s) expected length should be %d, got: %d", i, filepath, len(exp), len(s))
 		return
 	}
-
 	// make sure that all the types are there
 	for _, bt := range exp {
 		if _, ok := s[bt]; !ok {
@@ -140,18 +134,15 @@ func TestTestdata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not load testdata: %v", err)
 	}
-
 	for i, f := range files {
 		fn := f.Name()
 		if strings.HasSuffix(fn, ".pem") {
 			base := strings.TrimSuffix(path.Base(fn), ".pem")
-
 			// get key suffix
-			var suffix = ""
+			suffix := ""
 			if s := strings.Split(base, "-"); len(s) > 1 {
 				suffix = s[1]
 			}
-
 			// get expected block types
 			var test []BlockType
 			switch base[:1] {
@@ -166,7 +157,6 @@ func TestTestdata(t *testing.T) {
 			case "c": // certificate
 				test = []BlockType{Certificate}
 			}
-
 			testPEM(i, fn, test, t)
 		}
 	}
@@ -177,17 +167,14 @@ func TestGenKeys(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-
 	rsaStore, err := GenerateRSAKeySet(2048)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
-
 	ecStore, err := GenerateECKeySet(elliptic.P521())
 	if err != nil {
 		t.Fatalf("expcted no error, got: %v", err)
 	}
-
 	for i, s := range []Store{symStore, rsaStore, ecStore} {
 		// serialize
 		buf, err := s.Bytes()
@@ -199,11 +186,9 @@ func TestGenKeys(t *testing.T) {
 			t.Errorf("test %d buf len should not be 0", i)
 			continue
 		}
-
 		// unserialize
 		s0 := make(Store)
-		err = s0.Decode(buf)
-		if err != nil {
+		if err = s0.Decode(buf); err != nil {
 			t.Errorf("test %d expected no error, got: %v", i, err)
 			continue
 		}
@@ -211,10 +196,8 @@ func TestGenKeys(t *testing.T) {
 			t.Errorf("test %d s should have same length as s0 after load (%d!=%d)", i, len(s), len(s0))
 			continue
 		}
-
 		// check that the same keys present
-		sKeys := keys(s)
-		s0Keys := keys(s0)
+		sKeys, s0Keys := keys(s), keys(s0)
 		if len(sKeys) != len(s0Keys) {
 			t.Errorf("test %d sKeys and s0Keys should have same len", i)
 			continue
@@ -228,28 +211,14 @@ func TestGenKeys(t *testing.T) {
 	}
 }
 
-type BlockTypeKeys []BlockType
-
-func (btk BlockTypeKeys) Len() int {
-	return len(btk)
-}
-
-func (btk BlockTypeKeys) Swap(i, j int) {
-	btk[i], btk[j] = btk[j], btk[i]
-}
-
-func (btk BlockTypeKeys) Less(i, j int) bool {
-	return strings.Compare(btk[i].String(), btk[j].String()) < 0
-}
-
-func keys(s Store) BlockTypeKeys {
-	k := make(BlockTypeKeys, len(s))
-	i := 0
+func keys(s Store) []BlockType {
+	k, i := make([]BlockType, len(s)), 0
 	for key := range s {
 		k[i] = key
 		i++
 	}
-	sort.Sort(k)
-
+	sort.Slice(k, func(i, j int) bool {
+		return strings.Compare(k[i].String(), k[j].String()) < 0
+	})
 	return k
 }

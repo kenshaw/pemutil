@@ -33,11 +33,9 @@ const (
 // encoding, and then PKCS8 encoding.
 func ParsePKCSPrivateKey(buf []byte) (interface{}, error) {
 	// attempt PKCS1 parsing
-	key, err := x509.ParsePKCS1PrivateKey(buf)
-	if err == nil {
+	if key, err := x509.ParsePKCS1PrivateKey(buf); err == nil {
 		return key, nil
 	}
-
 	// attempt PKCS8 parsing
 	return x509.ParsePKCS8PrivateKey(buf)
 }

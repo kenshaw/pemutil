@@ -36,7 +36,6 @@ func (s Store) Bytes() ([]byte, error) {
 	if len(s) == 0 {
 		return nil, errors.New("store is empty")
 	}
-
 	// encode
 	var res bytes.Buffer
 	for _, k := range encOrder {
@@ -45,14 +44,11 @@ func (s Store) Bytes() ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-
-			_, err = res.Write(buf)
-			if err != nil {
+			if _, err = res.Write(buf); err != nil {
 				return nil, err
 			}
 		}
 	}
-
 	return res.Bytes(), nil
 }
 
@@ -65,7 +61,6 @@ func (s Store) AddPublicKeys() {
 	if _, ok := s[PublicKey]; ok {
 		return
 	}
-
 	for _, typ := range []BlockType{PrivateKey, RSAPrivateKey, ECPrivateKey} {
 		if key, ok := s[typ]; ok {
 			if v, ok := key.(interface {
@@ -94,10 +89,8 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 		if err == nil {
 			return s.add(RSAPrivateKey, key)
 		}
-
 		// must be a raw key (ie, use decoded b64 value as key)
 		return s.add(PrivateKey, block.Bytes)
-
 	case PublicKey:
 		key, err := x509.ParsePKIXPublicKey(block.Bytes)
 		if err != nil {
@@ -105,7 +98,6 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 			key = block.Bytes
 		}
 		return s.add(PublicKey, key)
-
 	case RSAPrivateKey:
 		// try pkcs1 then pkcs8 decoding
 		key, err := ParsePKCSPrivateKey(block.Bytes)
@@ -113,14 +105,12 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 			return err
 		}
 		return s.add(RSAPrivateKey, key)
-
 	case ECPrivateKey:
 		key, err := x509.ParseECPrivateKey(block.Bytes)
 		if err != nil {
 			return err
 		}
 		return s.add(ECPrivateKey, key)
-
 	case Certificate:
 		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
@@ -128,7 +118,6 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 		}
 		return s.add(Certificate, cert)
 	}
-
 	return fmt.Errorf("unknown block type %s", block.Type)
 }
 
@@ -161,7 +150,6 @@ func (s Store) PrivateKey() (crypto.PrivateKey, bool) {
 			return z, ok
 		}
 	}
-
 	return nil, false
 }
 
@@ -221,7 +209,6 @@ func (s Store) LoadFile(filename string) error {
 	if err != nil {
 		return err
 	}
-
 	return Decode(s, buf)
 }
 
@@ -247,6 +234,5 @@ func (s Store) WriteFile(filename string) error {
 	if err != nil {
 		return err
 	}
-
 	return ioutil.WriteFile(filename, buf, 0600)
 }

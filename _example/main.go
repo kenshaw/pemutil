@@ -12,8 +12,6 @@ import (
 )
 
 func main() {
-	var err error
-
 	// create store and load our private key
 	keyset, err := pemutil.LoadFile("rsa-private.pem")
 	if err != nil {

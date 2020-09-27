@@ -28,37 +28,29 @@ import (
 // crypto primitives encountered into the Store. The decoded PEM BlockType will
 // be used as the map key for each primitive.
 func Decode(s Store, buf []byte) error {
-	var err error
 	var block *pem.Block
-
 	// loop over pem encoded data
 	for len(buf) > 0 {
 		block, buf = pem.Decode(buf)
 		if block == nil {
 			return errors.New("invalid PEM data")
 		}
-
-		err = s.DecodeBlock(block)
-		if err != nil {
+		if err := s.DecodeBlock(block); err != nil {
 			return err
 		}
 	}
-
 	if len(s) == 0 {
 		return errors.New("could not decode any PEM blocks")
 	}
-
 	return nil
 }
 
 // DecodeBytes decodes the supplied buf into a store.
 func DecodeBytes(buf []byte) (Store, error) {
 	s := Store{}
-	err := Decode(s, buf)
-	if err != nil {
+	if err := Decode(s, buf); err != nil {
 		return nil, err
 	}
-
 	return s, nil
 }
 
@@ -67,32 +59,26 @@ func EncodePrimitive(p interface{}) ([]byte, error) {
 	var err error
 	var typ BlockType
 	var buf []byte
-
 	switch v := p.(type) {
 	case []byte:
 		typ, buf = PrivateKey, v
-
 	case *rsa.PrivateKey:
 		typ, buf = RSAPrivateKey, x509.MarshalPKCS1PrivateKey(v)
-
 	case *ecdsa.PrivateKey:
 		typ = ECPrivateKey
 		buf, err = x509.MarshalECPrivateKey(v)
 		if err != nil {
 			return nil, err
 		}
-
 	case *rsa.PublicKey, *ecdsa.PublicKey:
 		typ = PublicKey
 		buf, err = x509.MarshalPKIXPublicKey(v)
 		if err != nil {
 			return nil, err
 		}
-
 	default:
 		return nil, errors.New("unsupported crypto primitive")
 	}
-
 	// encode
 	return pem.EncodeToMemory(&pem.Block{
 		Type:  typ.String(),
@@ -111,7 +97,6 @@ func GenerateSymmetricKeySet(keyLen int) (Store, error) {
 	} else if c != keyLen {
 		return nil, fmt.Errorf("could not generate %d random key bits", keyLen)
 	}
-
 	return Store{
 		PrivateKey: buf,
 	}, nil
@@ -124,7 +109,6 @@ func GenerateRSAKeySet(bitLen int) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return Store{
 		RSAPrivateKey: key,
 		PublicKey:     key.Public(),
@@ -138,7 +122,6 @@ func GenerateECKeySet(curve elliptic.Curve) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return Store{
 		ECPrivateKey: key,
 		PublicKey:    key.Public(),
