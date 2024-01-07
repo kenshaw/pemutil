@@ -1,16 +1,15 @@
 // Package pemutil provides a simple, high-level API to load, parse, and decode
-// standard crypto primitives (ie, rsa.PrivateKey, ecdsa.PrivateKey, etc) from
-// PEM-encoded data.
+// standard crypto primitives (ie, [rsa.PrivateKey], [ecdsa.PrivateKey], etc)
+// from PEM-encoded data.
 //
-// The pemutil package commonly used similar to the following:
+// Example:
 //
-//		store, err := pemutil.LoadFile("/path/to/file")
-// 		if err != nil { /* ... */ }
+//	store, err := pemutil.LoadFile("/path/to/file")
+//	if err != nil { /* ... */ }
 //
-//		if rsaPrivKey, ok := store.RSAPrivateKey(); !ok {
-//			// PEM does not contain an RSA private key
-//		}
-//
+//	if rsaPrivKey, ok := store.RSAPrivateKey(); !ok {
+//		// PEM does not contain an RSA private key
+//	}
 package pemutil
 
 import (
@@ -25,8 +24,8 @@ import (
 )
 
 // Decode parses and decodes PEM-encoded data from buf, storing any resulting
-// crypto primitives encountered into the Store. The decoded PEM BlockType will
-// be used as the map key for each primitive.
+// crypto primitives encountered into the Store. The decoded PEM [BlockType]
+// will be used as the map key for each primitive.
 func Decode(s Store, buf []byte) error {
 	var block *pem.Block
 	// loop over pem encoded data
@@ -87,7 +86,7 @@ func EncodePrimitive(p interface{}) ([]byte, error) {
 }
 
 // GenerateSymmetricKeySet generates a private key crypto primitive, returning
-// it as a Store.
+// it as a [Store].
 func GenerateSymmetricKeySet(keyLen int) (Store, error) {
 	// generate random bytes
 	buf := make([]byte, keyLen)
@@ -103,7 +102,7 @@ func GenerateSymmetricKeySet(keyLen int) (Store, error) {
 }
 
 // GenerateRSAKeySet generates a RSA private and public key crypto primitives,
-// returning them as a Store.
+// returning them as a [Store].
 func GenerateRSAKeySet(bitLen int) (Store, error) {
 	key, err := rsa.GenerateKey(rand.Reader, bitLen)
 	if err != nil {
@@ -116,7 +115,7 @@ func GenerateRSAKeySet(bitLen int) (Store, error) {
 }
 
 // GenerateECKeySet generates a EC private and public key crypto primitives,
-// returning them as a Store.
+// returning them as a [Store].
 func GenerateECKeySet(curve elliptic.Curve) (Store, error) {
 	key, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {

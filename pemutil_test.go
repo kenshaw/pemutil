@@ -2,7 +2,7 @@ package pemutil
 
 import (
 	"crypto/elliptic"
-	"io/ioutil"
+	"os"
 	"path"
 	"sort"
 	"strings"
@@ -130,7 +130,7 @@ func getExpBlockType(suffix string, priv BlockType, pub BlockType) []BlockType {
 }
 
 func TestTestdata(t *testing.T) {
-	files, err := ioutil.ReadDir("testdata")
+	files, err := os.ReadDir("testdata")
 	if err != nil {
 		t.Fatalf("could not load testdata: %v", err)
 	}

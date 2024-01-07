@@ -9,19 +9,20 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 )
 
 // Store is a store containing crypto primitives.
 //
 // A store can contain any of the following crypto primitives:
-//     []byte 								-- raw key
-//     *rsa.PrivateKey, *ecdsa.PrivateKey   -- rsa / ecdsa private key
-//     *rsa.PublicKey, *ecdsa.PublicKey     -- rsa / ecdsa public key
-//     *x509.Certificate                    -- x509 certificate
+//
+//	[]byte 								 -- raw key
+//	*rsa.PrivateKey, *ecdsa.PrivateKey   -- rsa / ecdsa private key
+//	*rsa.PublicKey, *ecdsa.PublicKey     -- rsa / ecdsa public key
+//	*x509.Certificate                    -- x509 certificate
 type Store map[BlockType]interface{}
 
-// encOrder is the standard encode order for a Store.
+// encOrder is the standard encode order for a [Store].
 var encOrder = []BlockType{
 	PrivateKey,
 	RSAPrivateKey,
@@ -30,7 +31,7 @@ var encOrder = []BlockType{
 	Certificate,
 }
 
-// Bytes returns all crypto primitives in the store as a single byte slice
+// Bytes returns all crypto primitives in the [Store] as a single byte slice
 // containing the PEM-encoded versions of the crypto primitives.
 func (s Store) Bytes() ([]byte, error) {
 	if len(s) == 0 {
@@ -52,11 +53,11 @@ func (s Store) Bytes() ([]byte, error) {
 	return res.Bytes(), nil
 }
 
-// AddPublicKeys adds the public keys for a RSAPrivateKey or ECPrivateKey block
-// type generating and storing the corresponding *PublicKey block if not
+// AddPublicKeys adds the public keys for a [RSAPrivateKey] or [ECPrivateKey]
+// block type generating and storing the corresponding *PublicKey block if not
 // already present.
 //
-// Useful when a Store is missing the public key for a private key.
+// Useful when a [Store] is missing the public key for a private key.
 func (s Store) AddPublicKeys() {
 	if _, ok := s[PublicKey]; ok {
 		return
@@ -73,14 +74,14 @@ func (s Store) AddPublicKeys() {
 }
 
 // Decode parses and decodes PEM-encoded data from buf, storing any resulting
-// crypto primitives encountered into the Store. The decoded PEM BlockType will
-// be used as the map key for each primitive.
+// crypto primitives encountered into the [Store]. The decoded PEM [BlockType]
+// will be used as the map key for each primitive.
 func (s Store) Decode(buf []byte) error {
 	return Decode(s, buf)
 }
 
-// DecodeBlock decodes PEM block data, adding any crypto primitive encountered the
-// store.
+// DecodeBlock decodes PEM block data, adding any crypto primitive encountered
+// in the [Store].
 func (s Store) DecodeBlock(block *pem.Block) error {
 	switch BlockType(block.Type) {
 	case PrivateKey:
@@ -121,7 +122,7 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 	return fmt.Errorf("unknown block type %s", block.Type)
 }
 
-// add adds a crypto primitive to the store, returning an error if the defined
+// add adds a crypto primitive to the [Store], returning an error if the defined
 // block is already present.
 func (s Store) add(typ BlockType, v interface{}) error {
 	if _, ok := s[typ]; ok {
@@ -131,7 +132,7 @@ func (s Store) add(typ BlockType, v interface{}) error {
 	return nil
 }
 
-// PublicKey returns the public key contained within the store.
+// PublicKey returns the public key contained within the [Store].
 func (s Store) PublicKey() (crypto.PublicKey, bool) {
 	v, ok := s[PublicKey]
 	if !ok {
@@ -141,7 +142,7 @@ func (s Store) PublicKey() (crypto.PublicKey, bool) {
 	return z, ok
 }
 
-// PrivateKey returns the private key contained within the store.
+// PrivateKey returns the private key contained within the [Store].
 func (s Store) PrivateKey() (crypto.PrivateKey, bool) {
 	for _, typ := range []BlockType{PrivateKey, RSAPrivateKey, ECPrivateKey} {
 		v, ok := s[typ]
@@ -153,7 +154,7 @@ func (s Store) PrivateKey() (crypto.PrivateKey, bool) {
 	return nil, false
 }
 
-// RSAPublicKey returns the RSA public key contained within the store.
+// RSAPublicKey returns the RSA public key contained within the [Store].
 func (s Store) RSAPublicKey() (*rsa.PublicKey, bool) {
 	v, ok := s[PublicKey]
 	if !ok {
@@ -163,7 +164,7 @@ func (s Store) RSAPublicKey() (*rsa.PublicKey, bool) {
 	return z, ok
 }
 
-// RSAPrivateKey returns the RSA private key contained within the store.
+// RSAPrivateKey returns the RSA private key contained within the [Store].
 func (s Store) RSAPrivateKey() (*rsa.PrivateKey, bool) {
 	v, ok := s[RSAPrivateKey]
 	if !ok {
@@ -173,7 +174,7 @@ func (s Store) RSAPrivateKey() (*rsa.PrivateKey, bool) {
 	return z, ok
 }
 
-// ECPublicKey returns the ECDSA public key contained within the store.
+// ECPublicKey returns the ECDSA public key contained within the [Store].
 func (s Store) ECPublicKey() (*ecdsa.PublicKey, bool) {
 	v, ok := s[PublicKey]
 	if !ok {
@@ -183,7 +184,7 @@ func (s Store) ECPublicKey() (*ecdsa.PublicKey, bool) {
 	return z, ok
 }
 
-// ECPrivateKey returns the ECDSA private key contained within the store.
+// ECPrivateKey returns the ECDSA private key contained within the [Store].
 func (s Store) ECPrivateKey() (*ecdsa.PrivateKey, bool) {
 	v, ok := s[ECPrivateKey]
 	if !ok {
@@ -193,7 +194,7 @@ func (s Store) ECPrivateKey() (*ecdsa.PrivateKey, bool) {
 	return z, ok
 }
 
-// Certificate returns the X509 certificate contained within the store.
+// Certificate returns the X509 certificate contained within the [Store].
 func (s Store) Certificate() (*x509.Certificate, bool) {
 	v, ok := s[Certificate]
 	if !ok {
@@ -205,7 +206,7 @@ func (s Store) Certificate() (*x509.Certificate, bool) {
 
 // LoadFile loads crypto primitives from PEM encoded data stored in filename.
 func (s Store) LoadFile(filename string) error {
-	buf, err := ioutil.ReadFile(filename)
+	buf, err := os.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -215,9 +216,9 @@ func (s Store) LoadFile(filename string) error {
 // LoadFile creates a store and loads any crypto primitives in the PEM encoded
 // data stored in filename.
 //
-// Note: calls AddPublicKeys() after successfully loading a file. If that
-// behavior is not desired, please manually create the store and call Decode,
-// or DecodeBlock.
+// Note: calls [Store.AddPublicKeys] after successfully loading a file. If that
+// behavior is not desired, please manually create the [Store] and call
+// [Decode], or [DecodeBlock].
 func LoadFile(filename string) (Store, error) {
 	s := make(Store)
 	if err := s.LoadFile(filename); err != nil {
@@ -227,12 +228,12 @@ func LoadFile(filename string) (Store, error) {
 	return s, nil
 }
 
-// WriteFile writes the crypto primitives in the store to filename with mode
+// WriteFile writes the crypto primitives in the [Store] to filename with mode
 // 0600.
 func (s Store) WriteFile(filename string) error {
 	buf, err := s.Bytes()
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, buf, 0600)
+	return os.WriteFile(filename, buf, 0o600)
 }
