@@ -31,7 +31,7 @@ const (
 
 // ParsePKCSPrivateKey attempts to decode a RSA private key first using PKCS1
 // encoding, and then PKCS8 encoding.
-func ParsePKCSPrivateKey(buf []byte) (interface{}, error) {
+func ParsePKCSPrivateKey(buf []byte) (any, error) {
 	// attempt PKCS1 parsing
 	if key, err := x509.ParsePKCS1PrivateKey(buf); err == nil {
 		return key, nil

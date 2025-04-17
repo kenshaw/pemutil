@@ -54,7 +54,7 @@ func DecodeBytes(buf []byte) (Store, error) {
 }
 
 // EncodePrimitive encodes the crypto primitive p into PEM-encoded data.
-func EncodePrimitive(p interface{}) ([]byte, error) {
+func EncodePrimitive(p any) ([]byte, error) {
 	var err error
 	var typ BlockType
 	var buf []byte

@@ -20,7 +20,7 @@ import (
 //	*rsa.PrivateKey, *ecdsa.PrivateKey   -- rsa / ecdsa private key
 //	*rsa.PublicKey, *ecdsa.PublicKey     -- rsa / ecdsa public key
 //	*x509.Certificate                    -- x509 certificate
-type Store map[BlockType]interface{}
+type Store map[BlockType]any
 
 // encOrder is the standard encode order for a [Store].
 var encOrder = []BlockType{
@@ -124,7 +124,7 @@ func (s Store) DecodeBlock(block *pem.Block) error {
 
 // add adds a crypto primitive to the [Store], returning an error if the defined
 // block is already present.
-func (s Store) add(typ BlockType, v interface{}) error {
+func (s Store) add(typ BlockType, v any) error {
 	if _, ok := s[typ]; ok {
 		return fmt.Errorf("block type %s already present", typ)
 	}
